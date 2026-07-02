@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Trackly"
+rootProject.name = "trackly"
 include(":app")
  
