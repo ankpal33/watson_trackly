@@ -8,38 +8,38 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import kotlin.math.max
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,8 +49,41 @@ fun RoadmapDesign(
     locations: List<AisleLocation>,
     onLocationClick: (String) -> Unit = {}
 ) {
+    val focusLocation = remember(locations) {
+        locations.lastOrNull {
+            it.status == LocationStatus.COMPLETED
+        } ?: locations.first()
+    }
+    val nodePositions = remember {
+        mutableStateMapOf<String, Offset>()
+    }
 
-    val roadmapColumns = remember(locations) {
+    val horizontalState = rememberScrollState()
+    val verticalState = rememberScrollState()
+
+    LaunchedEffect(Unit) {
+        horizontalState.scrollTo(0)
+        verticalState.scrollTo(verticalState.maxValue)
+    }
+
+    val snakeOrder = remember(locations) {
+
+        locations
+            .groupBy { it.aisleCol }
+            .toSortedMap()
+            .flatMap { (aisle, items) ->
+
+                val sorted = items.sortedBy { it.walkOrder }
+
+                val isEven = aisle % 2 == 0
+
+                if (isEven)
+                    sorted.reversed()   // bottom → top
+                else
+                    sorted               // top → bottom
+            }
+    }
+    val grouped = remember(locations) {
         locations
             .groupBy { it.aisleCol }
             .toSortedMap()
@@ -62,130 +95,111 @@ fun RoadmapDesign(
             }
     }
 
-    LazyRow(
-        modifier = Modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.spacedBy(80.dp),
-        contentPadding = PaddingValues(horizontal = 48.dp)
-    ) {
-
-        itemsIndexed(roadmapColumns) { index, column ->
-
-            RoadmapColumnView(
-                column = column,
-                columnIndex = index,
-                onLocationClick = onLocationClick
-            )
-        }
-    }
-}
-
-@Composable
-private fun RoadmapColumnView(
-    column: RoadmapColumn,
-    columnIndex: Int,
-    onLocationClick: (String) -> Unit
-) {
-
-    val displayLocations =
-        if (columnIndex % 2 == 0)
-            column.locations
-        else
-            column.locations.reversed()
-
     Box(
-        modifier = Modifier
-            .width(340.dp)
-            .fillMaxHeight()
+        Modifier
+            .fillMaxSize()
+            .horizontalScroll(horizontalState)
+            .verticalScroll(verticalState)
     ) {
+        // Snake
+        SnakePathOverlay(
+            nodePositions = nodePositions,
+            snakeOrder = snakeOrder,
+            modifier = Modifier.matchParentSize()
+        )
 
-        VerticalDashedPath()
-
-        Column(
-            modifier = Modifier
-                .fillMaxHeight(),
-            verticalArrangement = Arrangement.Bottom,
-            horizontalAlignment = Alignment.CenterHorizontally
+        // Columns
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(80.dp)
         ) {
-
-            displayLocations.forEach { location ->
-
-                RoadmapNode(
-                    location = location,
-                    isLeftCard = columnIndex % 2 == 0,
-                    onLocationClick = onLocationClick
+            grouped.forEach { column ->
+                RoadmapColumnView(
+                    column = column,
+                    onLocationClick = onLocationClick,
+                    onNodePositioned = {
+                        nodePositions[it.id] = it.center
+                    }
                 )
-
-                Spacer(Modifier.height(28.dp))
             }
         }
     }
 }
 
 @Composable
-private fun VerticalDashedPath() {
+private fun SnakePathOverlay(
+    nodePositions: Map<String, Offset>,
+    snakeOrder: List<AisleLocation>,
+    modifier: Modifier
+) {
+    Canvas(modifier) {
 
-    Canvas(
-        Modifier.fillMaxSize()
-    ) {
+        val points = snakeOrder.mapNotNull { nodePositions[it.id] }
 
-        val x = size.width / 2
+        if (points.size < 2) return@Canvas
 
-        drawLine(
+        val path = Path().apply {
+
+            moveTo(points.first().x, points.first().y)
+
+            for (i in 1 until points.size) {
+                val p = points[i]
+                lineTo(p.x, p.y)
+            }
+        }
+
+        drawPath(
+            path = path,
             color = Color(0xFFD1D5DB),
-            start = Offset(x,0f),
-            end = Offset(x,size.height),
-            strokeWidth = 2.dp.toPx(),
-            pathEffect = PathEffect.dashPathEffect(
-                floatArrayOf(12f,12f)
+            style = Stroke(
+                width = 2.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(
+                    floatArrayOf(12f, 12f)
+                )
             )
         )
     }
 }
 
 @Composable
-private fun RoadmapRow(
-    row: RoadmapProductRow,
-    onLocationClick: (String) -> Unit
+private fun RoadmapColumnView(
+    column: RoadmapColumn,
+    onLocationClick: (String) -> Unit,
+    onNodePositioned: (NodePosition) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(110.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
 
-        // LEFT AISLE
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.CenterEnd
-        ) {
-            row.leftLocation?.let {
-                RoadmapNode(
-                    location = it,
-                    isLeftCard = true,
-                    onLocationClick = onLocationClick
-                )
-            }
+    val isEvenAisle = column.aisle % 2 == 0
+
+    val displayLocations =
+        if ((column.aisle + 1) % 2 == 1) {
+            column.locations.sortedByDescending { it.walkOrder }
+        } else {
+            column.locations.sortedBy { it.walkOrder }
         }
 
-        Spacer(Modifier.width(48.dp))
+    Box(
+        modifier = Modifier.width(340.dp).height(900.dp)
+    ) {
 
-        // RIGHT AISLE
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.CenterStart
+        Column(
+            modifier = Modifier.padding(20.dp).align(Alignment.BottomCenter),
+            verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            row.rightLocation?.let {
+
+            displayLocations.forEachIndexed { index, location ->
+
                 RoadmapNode(
-                    location = it,
-                    isLeftCard = false,
-                    onLocationClick = onLocationClick
+                    location = location,
+                    snakeIndex = index,
+                    onLocationClick = onLocationClick,
+                    onNodePositioned = onNodePositioned
                 )
+
+                Spacer(Modifier.height(35.dp))
             }
         }
     }
 }
-
 @Composable
 private fun StepCard(
     location: AisleLocation,
@@ -225,13 +239,6 @@ private fun StepCard(
                         letterSpacing = 0.5.sp,
                         maxLines = 1
                     )
-                    Text(
-                        text = "Aisle ${meta.aisleNumber} • ${location.name}",
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1
-                    )
                 }
                 IconCircle(icon = meta.icon, tint = cardColor)
             } else {
@@ -248,13 +255,6 @@ private fun StepCard(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.5.sp,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = "Aisle ${meta.aisleNumber} • ${location.name}",
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
                         maxLines = 1
                     )
                 }
@@ -282,7 +282,11 @@ private fun IconCircle(icon: androidx.compose.ui.graphics.vector.ImageVector, ti
 }
 
 @Composable
-private fun StepCircle(location: AisleLocation, meta: AisleMeta) {
+private fun StepCircle(
+    location: AisleLocation,
+    meta: AisleMeta,
+    onPositioned: (NodePosition) -> Unit
+) {
     val statusColor = when (location.status) {
         LocationStatus.COMPLETED -> meta.color
         LocationStatus.CURRENT -> meta.color
@@ -296,21 +300,37 @@ private fun StepCircle(location: AisleLocation, meta: AisleMeta) {
     Box(
         modifier = Modifier
             .size(28.dp)
+            .onGloballyPositioned { coordinates ->
+
+                val center = coordinates.boundsInRoot().center
+                onPositioned(
+                    NodePosition(
+                        id = location.id,
+                        aisle = location.aisleCol,
+                        walkOrder = location.walkOrder,
+                        center = center
+                    )
+                )
+            }
+
             .background(Color.White, CircleShape)
             .border(2.dp, statusColor, CircleShape)
             .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(if (isFilled) statusColor else Color.Transparent, CircleShape),
-            contentAlignment = Alignment.Center
+                .background(
+                    if (isFilled) statusColor else Color.Transparent,
+                    CircleShape
+                )
         ) {
             if (location.status == LocationStatus.COMPLETED) {
                 Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
+                    Icons.Default.Check,
+                    null,
                     tint = Color.White,
                     modifier = Modifier.size(14.dp)
                 )
@@ -322,17 +342,18 @@ private fun StepCircle(location: AisleLocation, meta: AisleMeta) {
 @Composable
 private fun RoadmapNode(
     location: AisleLocation,
-    isLeftCard: Boolean,
-    onLocationClick: (String) -> Unit
+    snakeIndex: Int,
+    onLocationClick: (String) -> Unit,
+    onNodePositioned: (NodePosition) -> Unit
 ) {
     val meta = nodeMetaMap[location.id] ?: return
-
+    val isEven = snakeIndex % 2 == 0
     Row(
-        modifier = Modifier.width(IntrinsicSize.Max),
+        modifier = Modifier.width(340.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
 
-        if (isLeftCard) {
+        if (isEven) {
 
             StepCard(
                 location = location,
@@ -346,14 +367,16 @@ private fun RoadmapNode(
 
             StepCircle(
                 location = location,
-                meta = meta
+                meta = meta,
+                onPositioned = onNodePositioned
             )
 
         } else {
 
             StepCircle(
                 location = location,
-                meta = meta
+                meta = meta,
+                onPositioned = onNodePositioned
             )
 
             Spacer(Modifier.width(16.dp))

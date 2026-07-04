@@ -25,7 +25,6 @@ import javax.inject.Inject
 // ── Aisle metadata ────────────────────────────────────────────────────────────
 
 data class AisleMeta(
-    val aisleNumber: Int,       // 1-based aisle number shown in cards
     val category: String,       // full aisle category name shown as heading
     val icon: ImageVector,
     val color: Color
@@ -41,19 +40,19 @@ data class AisleMeta(
  */
 val nodeMetaMap = mapOf(
     // Aisle 1
-    "A1P1" to AisleMeta(3, "Bakery & Eggs", Icons.Outlined.BakeryDining, Color(0xFFFB8C00)),
-    "A1P2" to AisleMeta(8, "Tea, Coffee & Beverages", Icons.Outlined.Coffee, Color(0xFF795548)),
-    "A1P3" to AisleMeta(8, "Tea, Coffee & Beverages", Icons.Outlined.Coffee, Color(0xFF795548)),
-    "A1P4" to AisleMeta(9, "Biscuits & Snacks", Icons.Outlined.Cookie, Color(0xFFFF7043)),
-    "A1P5" to AisleMeta(10, "Chocolates & Confectionery", Icons.Outlined.Cake, Color(0xFF6D4C41)),
+    "A01P1" to AisleMeta("Bakery & Eggs", Icons.Outlined.BakeryDining, Color(0xFFFB8C00)),
+    "A01P2" to AisleMeta("Tea, Coffee & Beverages", Icons.Outlined.Coffee, Color(0xFF795548)),
+    "A01P3" to AisleMeta("Tea, Coffee & Beverages", Icons.Outlined.Coffee, Color(0xFF795548)),
+    "A01P4" to AisleMeta("Biscuits & Snacks", Icons.Outlined.Cookie, Color(0xFFFF7043)),
+    "A01P5" to AisleMeta("Chocolates & Confectionery", Icons.Outlined.Cake, Color(0xFF6D4C41)),
 
     // Aisle 2
-    "A2P6" to AisleMeta(4, "Rice & Staples", Icons.Outlined.LocalDining, Color(0xFF8D6E63)),
-    "A2P5" to AisleMeta(5, "Oils & Ghee", Icons.Outlined.LocalFireDepartment, Color(0xFFFFB300)),
-    "A2P4" to AisleMeta(6, "Spices & Masalas", Icons.Outlined.Blender, Color(0xFFE53935)),
-    "A2P3" to AisleMeta(7, "Salt, Sugar & Sweeteners", Icons.Outlined.WaterDrop, Color(0xFF00ACC1)),
-    "A2P2" to AisleMeta(2, "Dairy & Frozen", Icons.Outlined.Icecream, Color(0xFF1E88E5)),
-    "A2P1" to AisleMeta(1, "Fruits & Vegetables", Icons.Outlined.Spa, Color(0xFF43A047))
+    "A02P6" to AisleMeta("Rice & Staples", Icons.Outlined.LocalDining, Color(0xFF8D6E63)),
+    "A02P5" to AisleMeta("Oils & Ghee", Icons.Outlined.LocalFireDepartment, Color(0xFFFFB300)),
+    "A02P4" to AisleMeta("Spices & Masalas", Icons.Outlined.Blender, Color(0xFFE53935)),
+    "A02P3" to AisleMeta("Salt, Sugar & Sweeteners", Icons.Outlined.WaterDrop, Color(0xFF00ACC1)),
+    "A02P2" to AisleMeta("Dairy & Frozen", Icons.Outlined.Icecream, Color(0xFF1E88E5)),
+    "A02P1" to AisleMeta("Fruits & Vegetables", Icons.Outlined.Spa, Color(0xFF43A047))
 )
 
 @HiltViewModel
@@ -78,17 +77,17 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
      * Barcode → location id.  IDs match nodeMetaMap keys exactly.
      */
     private val barcodeToLocationId = mapOf(
-        "1101" to "A1P1",
-        "1121" to "A1P2",
-        "1122" to "A1P3",
-        "1131" to "A1P4",
-        "1141" to "A1P5",
-        "2241" to "A2P6",
-        "2231" to "A2P5",
-        "2232" to "A2P4",
-        "2221" to "A2P3",
-        "2211" to "A2P2",
-        "2212" to "A2P1"
+        "1101" to "A01P1",
+        "1121" to "A01P2",
+        "1122" to "A01P3",
+        "1131" to "A01P4",
+        "1141" to "A01P5",
+        "2241" to "A02P6",
+        "2231" to "A02P5",
+        "2232" to "A02P4",
+        "2221" to "A02P3",
+        "2211" to "A02P2",
+        "2212" to "A02P1"
     )
 
     init {
@@ -111,29 +110,29 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
     private fun initializeLocations() {
         val locations = listOf(
             // ── Aisle 1, bottom → top ─────────────────────────────
-            AisleLocation(id="A1P1", name="Product 1", barcode="1101",
+            AisleLocation(id="A01P1", name="Product 1", barcode="1101",
                 aisleCol=0, productIndex=0, walkOrder=1),
-            AisleLocation(id="A1P2", name="Product 2", barcode="1121",
+            AisleLocation(id="A01P2", name="Product 2", barcode="1121",
                 aisleCol=0, productIndex=1, walkOrder=2),
-            AisleLocation(id="A1P3", name="Product 3", barcode="1122",
-                aisleCol=0, productIndex=1,  walkOrder=3),
-            AisleLocation(id="A1P4", name="Product 4", barcode="1131",
-                aisleCol=0, productIndex=2, walkOrder=4),
-            AisleLocation(id="A1P5", name="Product 5", barcode="1141",
-                aisleCol=0, productIndex=3, walkOrder=5),
+            AisleLocation(id="A01P3", name="Product 3", barcode="1122",
+                aisleCol=0, productIndex=2,  walkOrder=3),
+            AisleLocation(id="A01P4", name="Product 4", barcode="1131",
+                aisleCol=0, productIndex=3, walkOrder=4),
+            AisleLocation(id="A01P5", name="Product 5", barcode="1141",
+                aisleCol=0, productIndex=4, walkOrder=5),
             // ── Aisle 2, top → bottom ─────────────────────────────
-            AisleLocation(id="A2P1", name="Product 11", barcode="2212",
-                aisleCol=1, productIndex=1, walkOrder=11),
-            AisleLocation(id="A2P2", name="Product 10", barcode="2211",
-                aisleCol=1, productIndex=2, walkOrder=10),
-            AisleLocation(id="A2P3", name="Product 9", barcode="2221",
-                aisleCol=1, productIndex=3, walkOrder=9),
-            AisleLocation(id="A2P4", name="Product 8", barcode="2232",
-                aisleCol=1, productIndex=4, walkOrder=8),
-            AisleLocation(id="A2P5", name="Product 7", barcode="2231",
-                aisleCol=1, productIndex=5, walkOrder=7),
-            AisleLocation(id="A2P6", name="Product 6", barcode="2241",
-                aisleCol=1, productIndex=6, walkOrder=6),
+            AisleLocation(id="A02P1", name="Product 11", barcode="2212",
+                aisleCol=1, productIndex=0, walkOrder=11),
+            AisleLocation(id="A02P2", name="Product 10", barcode="2211",
+                aisleCol=1, productIndex=1, walkOrder=10),
+            AisleLocation(id="A02P3", name="Product 9", barcode="2221",
+                aisleCol=1, productIndex=2, walkOrder=9),
+            AisleLocation(id="A02P4", name="Product 8", barcode="2232",
+                aisleCol=1, productIndex=3, walkOrder=8),
+            AisleLocation(id="A02P5", name="Product 7", barcode="2231",
+                aisleCol=1, productIndex=4, walkOrder=7),
+            AisleLocation(id="A02P6", name="Product 6", barcode="2241",
+                aisleCol=1, productIndex=5, walkOrder=6),
         )
         _mapUiState.value = _mapUiState.value.copy(locations = locations)
     }

@@ -1,6 +1,8 @@
 package com.watson.trackly.ui.map
 
+import android.graphics.Rect
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.geometry.Offset
 
 /**
  * Side of an aisle shelf.
@@ -62,6 +64,20 @@ data class RoadmapProductRow(
 data class RoadmapColumn(
     val aisle: Int,
     val locations: List<AisleLocation>
+)
+
+data class NodePosition(
+    val id: String,
+    val aisle: Int,
+    val walkOrder: Int,
+    val center: Offset
+)
+
+data class CardPosition(
+    val id: String,
+    val aisle: Int,
+    val walkOrder: Int,
+    val rect: Rect
 )
 
 // Made with Bob
