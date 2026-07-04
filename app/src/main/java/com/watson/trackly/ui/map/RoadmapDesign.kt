@@ -4,21 +4,27 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,10 +37,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,165 +49,139 @@ fun RoadmapDesign(
     locations: List<AisleLocation>,
     onLocationClick: (String) -> Unit = {}
 ) {
-    val sortedLocations = remember(locations) {
-        locations.sortedBy { it.walkOrder }
+
+    val roadmapColumns = remember(locations) {
+        locations
+            .groupBy { it.aisleCol }
+            .toSortedMap()
+            .map { (aisle, items) ->
+                RoadmapColumn(
+                    aisle = aisle,
+                    locations = items.sortedBy { it.walkOrder }
+                )
+            }
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-        contentPadding = PaddingValues(top = 48.dp, bottom = 24.dp),
-        reverseLayout = true
+    LazyRow(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(80.dp),
+        contentPadding = PaddingValues(horizontal = 48.dp)
     ) {
-        // Start Dot (at the bottom because of reverseLayout)
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Canvas(modifier = Modifier.size(20.dp)) {
-                    drawCircle(Color(0xFFD1D5DB), 4.dp.toPx())
-                }
-            }
-        }
 
-        itemsIndexed(sortedLocations) { index, location ->
-            RoadmapStep(
-                location = location,
-                index = index,
-                isLast = index == sortedLocations.size - 1,
+        itemsIndexed(roadmapColumns) { index, column ->
+
+            RoadmapColumnView(
+                column = column,
+                columnIndex = index,
                 onLocationClick = onLocationClick
             )
         }
-
-        // End Dot (at the top because of reverseLayout)
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Canvas(modifier = Modifier.size(20.dp)) {
-                    drawCircle(Color(0xFFD1D5DB), 4.dp.toPx())
-                }
-            }
-        }
     }
 }
 
 @Composable
-private fun RoadmapStep(
-    location: AisleLocation,
-    index: Int,
-    isLast: Boolean,
+private fun RoadmapColumnView(
+    column: RoadmapColumn,
+    columnIndex: Int,
     onLocationClick: (String) -> Unit
 ) {
-    val meta = nodeMetaMap[location.id] ?: return
-    val isRightSide = index % 2 == 0 // Alternates sides
 
-    BoxWithConstraints(
+    val displayLocations =
+        if (columnIndex % 2 == 0)
+            column.locations
+        else
+            column.locations.reversed()
+
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(160.dp)
+            .width(340.dp)
+            .fillMaxHeight()
     ) {
-        // ── Path Segment ──────────────────────────────────────────────────────
-        PathSegment(index = index, isLast = isLast)
 
-        // ── Content Row ───────────────────────────────────────────────────────
-        Row(
+        VerticalDashedPath()
+
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = if (isRightSide) Arrangement.End else Arrangement.Start
+                .fillMaxHeight(),
+            verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (isRightSide) {
-                // Card [Left] | Circle [Right] | Label [Far Right]
-                StepCard(
+
+            displayLocations.forEach { location ->
+
+                RoadmapNode(
                     location = location,
-                    meta = meta,
-                    onLocationClick = onLocationClick,
-                    isIconOnRight = true,
-                    modifier = Modifier.weight(1f)
+                    isLeftCard = columnIndex % 2 == 0,
+                    onLocationClick = onLocationClick
                 )
-                Spacer(modifier = Modifier.width(16.dp))
-                StepCircle(location = location, meta = meta)
-                Spacer(modifier = Modifier.width(12.dp))
-                StepLabel(stepNumber = index + 1, isLeft = false)
-            } else {
-                // Label [Far Left] | Circle [Left] | Card [Right]
-                StepLabel(stepNumber = index + 1, isLeft = true)
-                Spacer(modifier = Modifier.width(12.dp))
-                StepCircle(location = location, meta = meta)
-                Spacer(modifier = Modifier.width(16.dp))
-                StepCard(
-                    location = location,
-                    meta = meta,
-                    onLocationClick = onLocationClick,
-                    isIconOnRight = false,
-                    modifier = Modifier.weight(1f)
-                )
+
+                Spacer(Modifier.height(28.dp))
             }
         }
     }
 }
 
 @Composable
-private fun PathSegment(index: Int, isLast: Boolean) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val w = size.width
-        val h = size.height
+private fun VerticalDashedPath() {
 
-        val isRight = index % 2 == 0
-        val targetX = if (isRight) w * 0.72f else w * 0.28f
-        val targetY = h / 2
+    Canvas(
+        Modifier.fillMaxSize()
+    ) {
 
-        // Previous connection (from item below)
-        val prevX = if (index == 0) w / 2f else (if (isRight) w * 0.28f else w * 0.72f)
-        val prevY = h * 1.5f
+        val x = size.width / 2
 
-        val path = Path().apply {
-            moveTo(prevX, prevY)
-            cubicTo(
-                prevX, prevY - h * 0.5f,
-                targetX, targetY + h * 0.5f,
-                targetX, targetY
-            )
-        }
-
-        drawPath(
-            path = path,
+        drawLine(
             color = Color(0xFFD1D5DB),
-            style = Stroke(
-                width = 2.5.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+            start = Offset(x,0f),
+            end = Offset(x,size.height),
+            strokeWidth = 2.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(
+                floatArrayOf(12f,12f)
             )
         )
+    }
+}
 
-        // Next connection (to end dot if last)
-        if (isLast) {
-            val endX = w / 2f
-            val endY = -40.dp.toPx()
-            val nextPath = Path().apply {
-                moveTo(targetX, targetY)
-                cubicTo(
-                    targetX, targetY - h * 0.5f,
-                    endX, endY + 20.dp.toPx(),
-                    endX, endY
+@Composable
+private fun RoadmapRow(
+    row: RoadmapProductRow,
+    onLocationClick: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(110.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        // LEFT AISLE
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            row.leftLocation?.let {
+                RoadmapNode(
+                    location = it,
+                    isLeftCard = true,
+                    onLocationClick = onLocationClick
                 )
             }
-            drawPath(
-                path = nextPath,
-                color = Color(0xFFD1D5DB),
-                style = Stroke(
-                    width = 2.5.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+        }
+
+        Spacer(Modifier.width(48.dp))
+
+        // RIGHT AISLE
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            row.rightLocation?.let {
+                RoadmapNode(
+                    location = it,
+                    isLeftCard = false,
+                    onLocationClick = onLocationClick
                 )
-            )
+            }
         }
     }
 }
@@ -341,24 +320,52 @@ private fun StepCircle(location: AisleLocation, meta: AisleMeta) {
 }
 
 @Composable
-private fun StepLabel(stepNumber: Int, isLeft: Boolean) {
-    Column(
-        horizontalAlignment = if (isLeft) Alignment.End else Alignment.Start,
-        modifier = Modifier.width(60.dp)
+private fun RoadmapNode(
+    location: AisleLocation,
+    isLeftCard: Boolean,
+    onLocationClick: (String) -> Unit
+) {
+    val meta = nodeMetaMap[location.id] ?: return
+
+    Row(
+        modifier = Modifier.width(IntrinsicSize.Max),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "STEP",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF94A3B8),
-            letterSpacing = 1.sp
-        )
-        Text(
-            text = stepNumber.toString().padStart(2, '0'),
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Black,
-            color = Color(0xFF334155),
-            lineHeight = 32.sp
-        )
+
+        if (isLeftCard) {
+
+            StepCard(
+                location = location,
+                meta = meta,
+                onLocationClick = onLocationClick,
+                isIconOnRight = true,
+                modifier = Modifier.requiredWidth(220.dp)
+            )
+
+            Spacer(Modifier.width(16.dp))
+
+            StepCircle(
+                location = location,
+                meta = meta
+            )
+
+        } else {
+
+            StepCircle(
+                location = location,
+                meta = meta
+            )
+
+            Spacer(Modifier.width(16.dp))
+
+            StepCard(
+                location = location,
+                meta = meta,
+                onLocationClick = onLocationClick,
+                isIconOnRight = false,
+                modifier = Modifier.requiredWidth(220.dp)
+            )
+
+        }
     }
 }

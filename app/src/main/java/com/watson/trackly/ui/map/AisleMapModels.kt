@@ -13,20 +13,16 @@ enum class ShelfSide { COMMON, LEFT, RIGHT }
 @Stable
 data class AisleLocation(
     val id: String,
-    val name: String,          // e.g. "A1-C2"
-    val position: Float,       // legacy – kept for barcode scan ordering
+    val name: String,
     val barcode: String = "",
+
+    val aisleCol: Int = 0,
+    val productIndex: Int = 0,      // 0-based within the aisle
+    val walkOrder: Int = 0,
+
     val status: LocationStatus = LocationStatus.DEFAULT,
     val issueLabel: String? = null,
-    val skipReason: String? = null,
-
-    // Grid coordinates on the store map
-    val aisleCol: Int = 0,     // which aisle column (0-based, left to right)
-    val rowIndex: Int = 0,     // row within that column (0-based, bottom = 0)
-    val side: ShelfSide = ShelfSide.COMMON,
-
-    // Walk order index – determines skip detection sequence
-    val walkOrder: Int = 0
+    val skipReason: String? = null
 )
 
 enum class LocationStatus {
@@ -57,13 +53,14 @@ data class MapUIState(
     val pendingLocationId: String? = null
 )
 
-data class RoadmapColumn(
-    val index: Int,
-    val rows: List<RoadmapRow>
+data class RoadmapProductRow(
+    val productIndex: Int,
+    val leftLocation: AisleLocation?,
+    val rightLocation: AisleLocation?
 )
 
-data class RoadmapRow(
-    val rowIndex: Int,
+data class RoadmapColumn(
+    val aisle: Int,
     val locations: List<AisleLocation>
 )
 
