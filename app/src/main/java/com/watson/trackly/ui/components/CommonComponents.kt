@@ -3,6 +3,7 @@ package com.watson.trackly.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,12 +18,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +37,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -382,6 +389,98 @@ private fun DotWithLine(
                 )
 
                 else -> {}
+            }
+        }
+    }
+}
+
+@Composable
+fun RoadCanvas(
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier.fillMaxSize()) {
+
+        val road = Path().apply {
+
+            moveTo(size.width * 0.55f, 20f)
+
+            // Vertical
+            lineTo(size.width * 0.55f, 150f)
+
+            // First curve
+            cubicTo(
+                size.width * 0.55f,
+                220f,
+                size.width * 0.15f,
+                220f,
+                size.width * 0.15f,
+                300f
+            )
+
+            // Horizontal
+            lineTo(size.width * 0.85f, 300f)
+
+            // Second curve
+            cubicTo(
+                size.width * 0.95f,
+                300f,
+                size.width * 0.95f,
+                420f,
+                size.width * 0.75f,
+                420f
+            )
+
+            lineTo(size.width * 0.15f, 420f)
+
+            // Continue more curves...
+        }
+
+        drawPath(
+            path = road,
+            color = Color.DarkGray,
+            style = Stroke(
+                width = 12.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+        )
+    }
+}
+
+@Composable
+fun StepCard(
+    number: Int,
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .width(300.dp)
+            .height(90.dp),
+        shape = RoundedCornerShape(45.dp),
+        elevation = CardDefaults.cardElevation(6.dp)
+    ) {
+
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Text(
+                text = "$number",
+                fontSize = 34.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Red
+            )
+
+            Spacer(Modifier.width(16.dp))
+
+            Column {
+                Text(title, fontWeight = FontWeight.Bold)
+                Text(
+                    description,
+                    fontSize = 12.sp
+                )
             }
         }
     }
