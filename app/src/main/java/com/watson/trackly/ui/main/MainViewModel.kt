@@ -102,27 +102,13 @@ class MainViewModel @Inject constructor(
         _mainUiState.value = _mainUiState.value.copy(isQRCodeFound = true)
         
         val scannedValue = result.rawValue ?: return
-        
-        // Check if this is an aisle barcode (3131, 3333, 2929, etc.)
-        val aisleBarcodes = listOf("3131", "3333", "2929", "1515", "1010", "2626", "2727", "5151", "4444", "0707")
-        if (scannedValue in aisleBarcodes) {
+
+        // Aisle barcodes are 4-digit numeric codes — pass directly to the map VM
+        if (scannedValue.matches(Regex("\\d{4}"))) {
             _qrCodeActionState.tryEmit(QRCodeAction.LocationScanned(scannedValue))
             resetScanQR()
             return
         }
-        
-        // Check if this is a phase location scan (format: phase1, phase2, etc.)
-        if (scannedValue.startsWith("phase", ignoreCase = true)) {
-            _qrCodeActionState.tryEmit(QRCodeAction.LocationScanned(scannedValue.lowercase()))
-            resetScanQR()
-            return
-        }
-        
-        // If we reach here, it's not a recognized aisle barcode
-        // Show toast and allow continued scanning
-        _qrCodeActionState.tryEmit(QRCodeAction.ToastAction("Barcode does not match"))
-        resetScanQR()
-        return
         
         viewModelScope.launch {
             insertQRCodeHistoryUseCase.execute(

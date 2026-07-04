@@ -24,4 +24,16 @@ interface UserDataRepo {
     suspend fun isPremium(): Boolean
     suspend fun updateKeepScanningSetting(isKeepScanning: Boolean)
     suspend fun isKeepScanning(): Boolean
+
+    /** Persist login session with current timestamp. */
+    suspend fun saveLoginSession()
+
+    /** Clear the persisted login session (on logout). */
+    suspend fun clearLoginSession()
+
+    /**
+     * Returns true if a login session exists and was saved less than [sessionDurationMs] ago.
+     * Default: 1 hour (3 600 000 ms).
+     */
+    suspend fun isSessionValid(sessionDurationMs: Long = 60L * 60L * 1000L): Boolean
 }

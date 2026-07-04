@@ -2,34 +2,46 @@ package com.watson.trackly.ui.map
 
 import androidx.compose.runtime.Stable
 
+/**
+ * Side of an aisle shelf.
+ * COMMON  = single shelf in the middle (no left/right split)
+ * LEFT    = left-side shelf of an aisle
+ * RIGHT   = right-side shelf of an aisle
+ */
+enum class ShelfSide { COMMON, LEFT, RIGHT }
+
 @Stable
 data class AisleLocation(
     val id: String,
-    val name: String,
-    val position: Float, // 0.0 to 1.0 representing position on the linear map
-    val barcode: String = "", // Barcode associated with this location
-    val status: LocationStatus = LocationStatus.PENDING
+    val name: String,          // e.g. "A1-C2"
+    val position: Float,       // legacy – kept for barcode scan ordering
+    val barcode: String = "",
+    val status: LocationStatus = LocationStatus.DEFAULT,
+    val issueLabel: String? = null,
+    val skipReason: String? = null,
+
+    // Grid coordinates on the store map
+    val aisleCol: Int = 0,     // which aisle column (0-based, left to right)
+    val rowIndex: Int = 0,     // row within that column (0-based, bottom = 0)
+    val side: ShelfSide = ShelfSide.COMMON,
+
+    // Walk order index – determines skip detection sequence
+    val walkOrder: Int = 0
 )
 
 enum class LocationStatus {
-    DEFAULT,    // Default state (gray dot)
-    COMPLETED,  // Scanned and submitted (green dot)
-    SKIPPED,    // Skipped (red/orange dot)
-    PENDING,    // Not yet scanned (yellow dot)
-    SCANNED,    // Scanned and submitted (green dot)
-    CURRENT     // Currently selected (highlighted)
+    DEFAULT,
+    COMPLETED,
+    SKIPPED,
+    PENDING,
+    SCANNED,
+    CURRENT
 }
 
-data class SkipReason(
-    val id: String,
-    val label: String
-)
+data class SkipReason(val id: String, val label: String)
 
 @Stable
-data class SurveyOption(
-    val id: String,
-    val label: String
-)
+data class SurveyOption(val id: String, val label: String)
 
 @Stable
 data class MapUIState(
@@ -42,7 +54,17 @@ data class MapUIState(
     val showSkipDialog: Boolean = false,
     val skippedLocations: List<AisleLocation> = emptyList(),
     val selectedSkipReason: String? = null,
-    val pendingLocationId: String? = null // The location that was scanned, waiting for skip confirmation
+    val pendingLocationId: String? = null
+)
+
+data class RoadmapColumn(
+    val index: Int,
+    val rows: List<RoadmapRow>
+)
+
+data class RoadmapRow(
+    val rowIndex: Int,
+    val locations: List<AisleLocation>
 )
 
 // Made with Bob

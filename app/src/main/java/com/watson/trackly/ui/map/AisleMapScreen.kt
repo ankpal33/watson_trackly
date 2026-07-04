@@ -15,16 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -36,10 +33,7 @@ import com.watson.trackly.R
 import com.watson.trackly.ui.components.AppIconButton
 import com.watson.trackly.ui.components.HeaderText
 import com.watson.trackly.ui.components.PrimaryButton
-import com.watson.trackly.ui.components.ScanCardState
 import com.watson.trackly.ui.components.SecondaryButton
-import com.watson.trackly.ui.components.VerticalLinearMap
-import com.watson.trackly.ui.setting.LocationItem
 
 @Composable
 fun AisleMapScreen(
@@ -88,7 +82,7 @@ fun AisleMapScreen(
 
             Spacer(modifier = Modifier.height(5.dp))
 
-            // Linear Map (takes 3/4 of screen) - Scrollable
+            // Roadmap (takes 3/4 of screen) - Scrollable
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -100,7 +94,7 @@ fun AisleMapScreen(
                         shape = MaterialTheme.shapes.medium
                     )
             ) {
-                LinearMapView(
+                RoadmapDesign(
                     locations = mapState.locations,
                     onLocationClick = { locationId ->
                         vm.onLocationClicked(locationId)
@@ -144,7 +138,7 @@ fun AisleMapScreen(
                 onCancel = { vm.cancelSkip() }
             )
         }
-        
+
         // Survey Dialog
         if (mapState.showSurveyDialog) {
             val currentLocation = mapState.locations.find { it.id == mapState.currentLocationId }
@@ -161,7 +155,7 @@ fun AisleMapScreen(
                 )
             }
         }
-        
+
         // End Walk Dialog
         if (mapState.showEndWalkDialog) {
             EndWalkDialog(
@@ -176,41 +170,5 @@ fun AisleMapScreen(
     }
 }
 
-@Composable
-fun LinearMapView(
-    locations: List<AisleLocation>,
-    onLocationClick: (String) -> Unit
-) {
-    // Convert AisleLocation to LocationItem for VerticalLinearMap
-    // Reverse the list so Aisle 10 appears at top and Aisle 1 at bottom
-    val locationItems = remember(locations) {
-        locations.reversed().map { aisleLocation ->
-            LocationItem(
-                name = aisleLocation.name,
-                barcode = aisleLocation.barcode,
-                status = aisleLocation.status
-            )
-        }
-    }
-    
-    val currentCardState = remember { ScanCardState.INITIAL }
-    val matchedLocationItem = locationItems.firstOrNull { it.status == LocationStatus.SCANNED }
-    val bottomCardHeight = 0.dp
-    val listState = rememberLazyListState()
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(5.dp)
-    ) {
-        VerticalLinearMap(
-            locations = locationItems,
-            currentCardState = currentCardState,
-            matchedLocation = matchedLocationItem,
-            cardBottomPadding = with(LocalDensity.current) { bottomCardHeight },
-            listState = listState
-        )
-    }
-}
 
 // Made with Bob

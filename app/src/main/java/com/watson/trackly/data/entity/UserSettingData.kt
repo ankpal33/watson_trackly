@@ -3,6 +3,7 @@ package com.watson.trackly.data.entity
 import android.content.Context
 import androidx.compose.runtime.Stable
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 
 @Stable
@@ -25,4 +26,6 @@ object SettingPreferencesKey {
     val IS_ENABLE_SOUND = booleanPreferencesKey("is_enable_sound")
     val IS_PREMIUM = booleanPreferencesKey("is_premium")
     val IS_KEEP_SCANNING = booleanPreferencesKey("is_keep_scanning")
+    val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
+    val LOGIN_TIMESTAMP = longPreferencesKey("login_timestamp")
 }

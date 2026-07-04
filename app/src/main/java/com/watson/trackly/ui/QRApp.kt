@@ -23,8 +23,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.common.InputImage
 import com.watson.trackly.R
 import com.watson.trackly.ui.history.HistoryScreenLayout
+import com.watson.trackly.ui.login.LoginScreen
+import com.watson.trackly.ui.login.SessionViewModel
 import com.watson.trackly.ui.main.MainScreenLayout
 import com.watson.trackly.ui.main.MainViewModel
 import com.watson.trackly.ui.main.QRCodeAction
@@ -33,14 +37,12 @@ import com.watson.trackly.ui.map.AisleMapViewModel
 import com.watson.trackly.ui.premium.PremiumScreenLayout
 import com.watson.trackly.ui.result.QRCodeResultLayout
 import com.watson.trackly.ui.setting.SettingScreenLayout
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.common.InputImage
-import com.watson.trackly.ui.login.LoginScreen
 
 @Composable
 fun QRApp(
     vm: MainViewModel = hiltViewModel(),
     mapVm: AisleMapViewModel = hiltViewModel(),
+    sessionVm: SessionViewModel = hiltViewModel(),
     appNavHost: NavHostController = rememberNavController()
 ) {
 
@@ -157,6 +159,17 @@ fun QRApp(
 
     var isLoggedIn by remember { mutableStateOf(false) }
 
+    // On first composition check if there is a valid persisted session (≤ 1 hour old).
+    // If yes, jump straight to the map; the user never sees the login screen.
+    LaunchedEffect(Unit) {
+        if (sessionVm.repo.isSessionValid()) {
+            isLoggedIn = true
+            appNavHost.navigate(AppScreen.AISLE_MAP.value) {
+                popUpTo(AppScreen.LOGIN.value) { inclusive = true }
+            }
+        }
+    }
+
     NavHost(
         navController = appNavHost,
         modifier = Modifier.fillMaxSize(),
@@ -181,6 +194,8 @@ fun QRApp(
                 },
                 onLogout = {
                     isLoggedIn = false
+                    // Clear persisted session so next launch requires re-login
+                    sessionVm.clearSession()
                     appNavHost.navigate(AppScreen.LOGIN.value) {
                         popUpTo(AppScreen.AISLE_MAP.value) { inclusive = true }
                     }

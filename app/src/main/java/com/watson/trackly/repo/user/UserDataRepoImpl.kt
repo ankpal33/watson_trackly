@@ -68,4 +68,26 @@ class UserDataRepoImpl(
     override suspend fun isKeepScanning(): Boolean {
         return userSettingDataStore.data.map { it[SettingPreferencesKey.IS_KEEP_SCANNING] ?: false }.first() && isPremium()
     }
+
+    override suspend fun saveLoginSession() {
+        userSettingDataStore.edit {
+            it[SettingPreferencesKey.IS_LOGGED_IN] = true
+            it[SettingPreferencesKey.LOGIN_TIMESTAMP] = System.currentTimeMillis()
+        }
+    }
+
+    override suspend fun clearLoginSession() {
+        userSettingDataStore.edit {
+            it[SettingPreferencesKey.IS_LOGGED_IN] = false
+            it[SettingPreferencesKey.LOGIN_TIMESTAMP] = 0L
+        }
+    }
+
+    override suspend fun isSessionValid(sessionDurationMs: Long): Boolean {
+        return userSettingDataStore.data.map { prefs ->
+            val loggedIn = prefs[SettingPreferencesKey.IS_LOGGED_IN] ?: false
+            val timestamp = prefs[SettingPreferencesKey.LOGIN_TIMESTAMP] ?: 0L
+            loggedIn && (System.currentTimeMillis() - timestamp) < sessionDurationMs
+        }.first()
+    }
 }

@@ -7,6 +7,7 @@ import android.os.Build
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.watson.trackly.repo.user.UserDataRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +27,8 @@ data class LoginUIState(
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    @ApplicationContext private val applicationContext: Context
+    @ApplicationContext private val applicationContext: Context,
+    private val userDataRepo: UserDataRepo
 ) : ViewModel() {
 
     companion object {
@@ -67,7 +69,8 @@ class LoginViewModel @Inject constructor(
             // Validate credentials
             val currentState = _loginUiState.value
             if (currentState.userId == VALID_USER_ID && currentState.password == VALID_PASSWORD) {
-                // Successful login
+                // Successful login — persist session so it survives restarts
+                userDataRepo.saveLoginSession()
                 _loginUiState.value = _loginUiState.value.copy(
                     isLoading = false,
                     isLoggedIn = true,
@@ -100,6 +103,7 @@ class LoginViewModel @Inject constructor(
     }
 
     fun resetLoginState() {
+        viewModelScope.launch { userDataRepo.clearLoginSession() }
         _loginUiState.value = LoginUIState()
     }
 }
