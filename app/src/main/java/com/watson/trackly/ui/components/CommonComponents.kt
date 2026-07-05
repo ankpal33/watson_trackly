@@ -485,3 +485,32 @@ fun StepCard(
         }
     }
 }
+
+/**
+ * Reusable tab toggle button
+ */
+@Composable
+fun TabButton(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(40.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) AppMain else Color.White,
+            contentColor = if (isSelected) Color.White else AppMain
+        ),
+        border = if (isSelected) null else BorderStroke(1.dp, AppMain),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+    ) {
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+        )
+    }
+}

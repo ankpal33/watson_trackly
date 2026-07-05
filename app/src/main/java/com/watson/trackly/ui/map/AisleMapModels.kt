@@ -36,6 +36,10 @@ data class SkipReason(val id: String, val label: String)
 @Stable
 data class SurveyOption(val id: String, val label: String)
 
+enum class RoadmapViewMode {
+    SCAN, MAP, LIST
+}
+
 @Stable
 data class MapUIState(
     val locations: List<AisleLocation> = emptyList(),
@@ -47,7 +51,8 @@ data class MapUIState(
     val showSkipDialog: Boolean = false,
     val skippedLocations: List<AisleLocation> = emptyList(),
     val selectedSkipReason: String? = null,
-    val pendingLocationId: String? = null
+    val pendingLocationId: String? = null,
+    val viewMode: RoadmapViewMode = RoadmapViewMode.SCAN
 )
 
 data class RoadmapColumn(

@@ -11,10 +11,12 @@ import androidx.compose.material.icons.outlined.Cookie
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Icecream
 import androidx.compose.material.icons.outlined.Kitchen
+import androidx.compose.material.icons.outlined.LocalBar
 import androidx.compose.material.icons.outlined.LocalDining
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material.icons.outlined.Soap
+import androidx.compose.material.icons.outlined.SoupKitchen
 import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.ui.graphics.Color
@@ -50,10 +52,10 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
         // Aisle 1 (Bottom to Top walk order)
         0 to listOf(
             AisleLocation("A01P1", "1101", walkOrder = 1, category = "Bakery & Eggs", icon = Icons.Outlined.BakeryDining, color = Color(0xFFFB8C00)),
-            AisleLocation("A01P2", "1121", walkOrder = 2, category = "Tea, Coffee & Beverages", icon = Icons.Outlined.Coffee, color = Color(0xFF795548)),
-            AisleLocation("A01P3", "1122", walkOrder = 3, category = "Tea, Coffee & Beverages", icon = Icons.Outlined.Coffee, color = Color(0xFF795548)),
+            AisleLocation("A01P2", "1121", walkOrder = 2, category = "Tea, Coffee", icon = Icons.Outlined.Coffee, color = Color(0xFF795548)),
+            AisleLocation("A01P3", "1122", walkOrder = 3, category = "Beverages", icon = Icons.Outlined.LocalBar, color = Color(0xFF795548)),
             AisleLocation("A01P4", "1131", walkOrder = 4, category = "Biscuits & Snacks", icon = Icons.Outlined.Cookie, color = Color(0xFFFF7043)),
-            AisleLocation("A01P5", "1141", walkOrder = 5, category = "Chocolates & Confectionery", icon = Icons.Outlined.Cake, color = Color(0xFF6D4C41))
+            AisleLocation("A01P5", "1141", walkOrder = 5, category = "Chocolates", icon = Icons.Outlined.Cake, color = Color(0xFF6D4C41))
         ),
 
         // Aisle 2 (Top to Bottom walk order)
@@ -61,7 +63,7 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
             AisleLocation("A02P6", "2241", walkOrder = 6, category = "Rice & Staples", icon = Icons.Outlined.LocalDining, color = Color(0xFF8D6E63)),
             AisleLocation("A02P5", "2231", walkOrder = 7, category = "Oils & Ghee", icon = Icons.Outlined.LocalFireDepartment, color = Color(0xFFFFB300)),
             AisleLocation("A02P4", "2232", walkOrder = 8, category = "Spices & Masalas", icon = Icons.Outlined.Blender, color = Color(0xFFE53935)),
-            AisleLocation("A02P3", "2221", walkOrder = 9, category = "Salt, Sugar & Sweeteners", icon = Icons.Outlined.WaterDrop, color = Color(0xFF00ACC1)),
+            AisleLocation("A02P3", "2221", walkOrder = 9, category = "Instant Foods", icon = Icons.Outlined.SoupKitchen, color = Color(0xFF00ACC1)),
             AisleLocation("A02P2", "2211", walkOrder = 10, category = "Dairy & Frozen", icon = Icons.Outlined.Icecream, color = Color(0xFF1E88E5)),
             AisleLocation("A02P1", "2212", walkOrder = 11, category = "Fruits & Vegetables", icon = Icons.Outlined.Spa, color = Color(0xFF43A047))
         ),
@@ -188,6 +190,10 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
         } else {
             onLocationScanned(location.id)
         }
+    }
+
+    fun setViewMode(mode: RoadmapViewMode) {
+        _mapUiState.value = _mapUiState.value.copy(viewMode = mode)
     }
 
     private fun findSkippedNodes(scannedWalkOrder: Int): List<AisleLocation> {
