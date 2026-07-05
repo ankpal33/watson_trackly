@@ -144,7 +144,7 @@ fun AisleMapScreen(
             val currentLocation = mapState.locations.find { it.id == mapState.currentLocationId }
             currentLocation?.let { location ->
                 SurveyDialog(
-                    locationName = location.name,
+                    locationName = location.category,
                     options = vm.surveyOptions,
                     selectedOption = mapState.selectedOption,
                     onOptionSelected = { vm.onSurveyOptionSelected(it) },

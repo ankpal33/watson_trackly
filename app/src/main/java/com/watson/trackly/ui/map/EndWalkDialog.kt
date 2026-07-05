@@ -80,7 +80,7 @@ fun EndWalkDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = location.name,
+                                text = location.category,
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )

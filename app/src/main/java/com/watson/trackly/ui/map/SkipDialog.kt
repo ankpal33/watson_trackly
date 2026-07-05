@@ -63,9 +63,9 @@ fun SkipDialog(
                 // Title - show skipped locations
                 Text(
                     text = if (skippedLocations.size == 1) {
-                        "${skippedLocations.first().name}: Skipped"
+                        "${skippedLocations.first().category}: Skipped"
                     } else {
-                        "Skipped Aisles: ${skippedLocations.joinToString(", ") { it.name }}"
+                        "Skipped Aisles: ${skippedLocations.joinToString(", ") { it.category }}"
                     },
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,

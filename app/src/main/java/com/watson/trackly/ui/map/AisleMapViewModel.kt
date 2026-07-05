@@ -12,7 +12,6 @@ import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,39 +20,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-// ── Aisle metadata ────────────────────────────────────────────────────────────
-
-data class AisleMeta(
-    val category: String,       // full aisle category name shown as heading
-    val icon: ImageVector,
-    val color: Color
-)
-
-/**
- * Metadata keyed by node id, e.g. "A1C1", "A1L3", "A2R2".
- * aisleNumber follows the 10-aisle spec:
- *   1 Fruits & Vegetables  2 Dairy & Frozen    3 Bakery & Eggs
- *   4 Rice & Staples       5 Oils & Ghee       6 Spices & Masalas
- *   7 Salt, Sugar & Sweeteners  8 Tea, Coffee & Beverages
- *   9 Biscuits & Snacks   10 Chocolates & Confectionery
- */
-val nodeMetaMap = mapOf(
-    // Aisle 1
-    "A01P1" to AisleMeta("Bakery & Eggs", Icons.Outlined.BakeryDining, Color(0xFFFB8C00)),
-    "A01P2" to AisleMeta("Tea, Coffee & Beverages", Icons.Outlined.Coffee, Color(0xFF795548)),
-    "A01P3" to AisleMeta("Tea, Coffee & Beverages", Icons.Outlined.Coffee, Color(0xFF795548)),
-    "A01P4" to AisleMeta("Biscuits & Snacks", Icons.Outlined.Cookie, Color(0xFFFF7043)),
-    "A01P5" to AisleMeta("Chocolates & Confectionery", Icons.Outlined.Cake, Color(0xFF6D4C41)),
-
-    // Aisle 2
-    "A02P6" to AisleMeta("Rice & Staples", Icons.Outlined.LocalDining, Color(0xFF8D6E63)),
-    "A02P5" to AisleMeta("Oils & Ghee", Icons.Outlined.LocalFireDepartment, Color(0xFFFFB300)),
-    "A02P4" to AisleMeta("Spices & Masalas", Icons.Outlined.Blender, Color(0xFFE53935)),
-    "A02P3" to AisleMeta("Salt, Sugar & Sweeteners", Icons.Outlined.WaterDrop, Color(0xFF00ACC1)),
-    "A02P2" to AisleMeta("Dairy & Frozen", Icons.Outlined.Icecream, Color(0xFF1E88E5)),
-    "A02P1" to AisleMeta("Fruits & Vegetables", Icons.Outlined.Spa, Color(0xFF43A047))
-)
 
 @HiltViewModel
 class AisleMapViewModel @Inject constructor() : ViewModel() {
@@ -73,68 +39,47 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
         SkipReason("2", "Reason 2")
     )
 
-    /**
-     * Barcode → location id.  IDs match nodeMetaMap keys exactly.
-     */
-    private val barcodeToLocationId = mapOf(
-        "1101" to "A01P1",
-        "1121" to "A01P2",
-        "1122" to "A01P3",
-        "1131" to "A01P4",
-        "1141" to "A01P5",
-        "2241" to "A02P6",
-        "2231" to "A02P5",
-        "2232" to "A02P4",
-        "2221" to "A02P3",
-        "2211" to "A02P2",
-        "2212" to "A02P1"
+    // Organized grouped layout - easier to manage like JSON
+    private val storeLayoutGrouped = mapOf(
+        // Aisle 1 (Bottom to Top walk order)
+        0 to listOf(
+            AisleLocation("A01P1", "1101", walkOrder = 1, category = "Bakery & Eggs", icon = Icons.Outlined.BakeryDining, color = Color(0xFFFB8C00)),
+            AisleLocation("A01P2", "1121", walkOrder = 2, category = "Tea, Coffee & Beverages", icon = Icons.Outlined.Coffee, color = Color(0xFF795548)),
+            AisleLocation("A01P3", "1122", walkOrder = 3, category = "Tea, Coffee & Beverages", icon = Icons.Outlined.Coffee, color = Color(0xFF795548)),
+            AisleLocation("A01P4", "1131", walkOrder = 4, category = "Biscuits & Snacks", icon = Icons.Outlined.Cookie, color = Color(0xFFFF7043)),
+            AisleLocation("A01P5", "1141", walkOrder = 5, category = "Chocolates & Confectionery", icon = Icons.Outlined.Cake, color = Color(0xFF6D4C41))
+        ),
+
+        // Aisle 2 (Top to Bottom walk order)
+        1 to listOf(
+            AisleLocation("A02P6", "2241", walkOrder = 6, category = "Rice & Staples", icon = Icons.Outlined.LocalDining, color = Color(0xFF8D6E63)),
+            AisleLocation("A02P5", "2231", walkOrder = 7, category = "Oils & Ghee", icon = Icons.Outlined.LocalFireDepartment, color = Color(0xFFFFB300)),
+            AisleLocation("A02P4", "2232", walkOrder = 8, category = "Spices & Masalas", icon = Icons.Outlined.Blender, color = Color(0xFFE53935)),
+            AisleLocation("A02P3", "2221", walkOrder = 9, category = "Salt, Sugar & Sweeteners", icon = Icons.Outlined.WaterDrop, color = Color(0xFF00ACC1)),
+            AisleLocation("A02P2", "2211", walkOrder = 10, category = "Dairy & Frozen", icon = Icons.Outlined.Icecream, color = Color(0xFF1E88E5)),
+            AisleLocation("A02P1", "2212", walkOrder = 11, category = "Fruits & Vegetables", icon = Icons.Outlined.Spa, color = Color(0xFF43A047))
+        ),
+
+        // Aisle 3 (Bottom to Top walk order)
+        2 to listOf(
+            AisleLocation("A03P1", "2311", walkOrder = 12, category = "Rice & Staples", icon = Icons.Outlined.LocalDining, color = Color(0xFF8D6E63)),
+            AisleLocation("A03P2", "2312", walkOrder = 13, category = "Oils & Ghee", icon = Icons.Outlined.LocalFireDepartment, color = Color(0xFFFFB300)),
+            AisleLocation("A03P3", "2313", walkOrder = 14, category = "Spices & Masalas", icon = Icons.Outlined.Blender, color = Color(0xFFE53935)),
+            AisleLocation("A03P4", "2314", walkOrder = 15, category = "Salt, Sugar & Sweeteners", icon = Icons.Outlined.WaterDrop, color = Color(0xFF00ACC1)),
+            AisleLocation("A03P5", "2315", walkOrder = 16, category = "Dairy & Frozen", icon = Icons.Outlined.Icecream, color = Color(0xFF1E88E5)),
+            AisleLocation("A03P6", "2316", walkOrder = 17, category = "Fruits & Vegetables", icon = Icons.Outlined.Spa, color = Color(0xFF43A047))
+        )
     )
 
-    init {
-        initializeLocations()
+    // Derived flat list for scanning and status updates
+    private val flattenedLayout = storeLayoutGrouped.flatMap { (aisle, locations) ->
+        locations.map { it.copy(aisleCol = aisle) }
     }
 
-    /**
-     * Store layout (matches nodeMetaMap):
-     *
-     *   Aisle 1 (col 0, walk bottom→top)    Aisle 2 (col 1, walk top→bottom)
-     *   row 3:  A1C4 (C)           ───────  A2C4 (C)
-     *   row 2:  A1C3 (C)                    A2L3 (L) + A2R3 (R)
-     *   row 1:  A1L2 (L) + A1R2 (R)         A2C2 (C)
-     *   row 0:  A1C1 (C)                    A2L1 (L) + A2R1 (R)
-     *
-     * Walk order:
-     *   1  A1C1   2  A1L2   3  A1R2   4  A1C3   5  A1C4
-     *   6  A2C4   7  A2L3   8  A2R3   9  A2C2  10  A2L1  11  A2R1
-     */
-    private fun initializeLocations() {
-        val locations = listOf(
-            // ── Aisle 1, bottom → top ─────────────────────────────
-            AisleLocation(id="A01P1", name="Product 1", barcode="1101",
-                aisleCol=0, productIndex=0, walkOrder=1),
-            AisleLocation(id="A01P2", name="Product 2", barcode="1121",
-                aisleCol=0, productIndex=1, walkOrder=2),
-            AisleLocation(id="A01P3", name="Product 3", barcode="1122",
-                aisleCol=0, productIndex=2,  walkOrder=3),
-            AisleLocation(id="A01P4", name="Product 4", barcode="1131",
-                aisleCol=0, productIndex=3, walkOrder=4),
-            AisleLocation(id="A01P5", name="Product 5", barcode="1141",
-                aisleCol=0, productIndex=4, walkOrder=5),
-            // ── Aisle 2, top → bottom ─────────────────────────────
-            AisleLocation(id="A02P1", name="Product 11", barcode="2212",
-                aisleCol=1, productIndex=0, walkOrder=11),
-            AisleLocation(id="A02P2", name="Product 10", barcode="2211",
-                aisleCol=1, productIndex=1, walkOrder=10),
-            AisleLocation(id="A02P3", name="Product 9", barcode="2221",
-                aisleCol=1, productIndex=2, walkOrder=9),
-            AisleLocation(id="A02P4", name="Product 8", barcode="2232",
-                aisleCol=1, productIndex=3, walkOrder=8),
-            AisleLocation(id="A02P5", name="Product 7", barcode="2231",
-                aisleCol=1, productIndex=4, walkOrder=7),
-            AisleLocation(id="A02P6", name="Product 6", barcode="2241",
-                aisleCol=1, productIndex=5, walkOrder=6),
-        )
-        _mapUiState.value = _mapUiState.value.copy(locations = locations)
+    private val barcodeToLocationId = flattenedLayout.associate { it.barcode to it.id }
+
+    init {
+        _mapUiState.value = _mapUiState.value.copy(locations = flattenedLayout)
     }
 
     // ── Walk control ──────────────────────────────────────────────────────────
@@ -188,10 +133,9 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
     fun onResolveNow() {
         viewModelScope.launch {
             val currentId = _mapUiState.value.currentLocationId ?: return@launch
-            val issueLabel = surveyOptions.find { it.id == _mapUiState.value.selectedOption }?.label
             val updatedLocations = _mapUiState.value.locations.map { loc ->
                 if (loc.id == currentId)
-                    loc.copy(status = LocationStatus.COMPLETED, issueLabel = issueLabel, skipReason = null)
+                    loc.copy(status = LocationStatus.COMPLETED, issueLabel = null, skipReason = null)
                 else loc
             }
             _mapUiState.value = _mapUiState.value.copy(
@@ -206,10 +150,9 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
     fun onResolveLater() {
         viewModelScope.launch {
             val currentId = _mapUiState.value.currentLocationId ?: return@launch
-            val issueLabel = surveyOptions.find { it.id == _mapUiState.value.selectedOption }?.label
             val updatedLocations = _mapUiState.value.locations.map { loc ->
                 if (loc.id == currentId)
-                    loc.copy(status = LocationStatus.PENDING, issueLabel = issueLabel, skipReason = null)
+                    loc.copy(status = LocationStatus.PENDING, issueLabel = null, skipReason = null)
                 else loc
             }
             _mapUiState.value = _mapUiState.value.copy(
@@ -246,8 +189,7 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
             .maxOfOrNull { it.walkOrder }
         if (lastProcessedOrder == null || scannedWalkOrder <= lastProcessedOrder + 1) return emptyList()
         return locations.filter { loc ->
-            loc.walkOrder > lastProcessedOrder &&
-            loc.walkOrder < scannedWalkOrder &&
+            loc.walkOrder in (lastProcessedOrder + 1)..<scannedWalkOrder &&
             loc.status == LocationStatus.DEFAULT
         }.sortedBy { it.walkOrder }
     }
@@ -300,5 +242,3 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
         )
     }
 }
-
-// Made with Bob
