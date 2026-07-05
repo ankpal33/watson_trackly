@@ -86,7 +86,7 @@ fun AisleMapScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.8f)
+                    .fillMaxHeight(0.7f)
                     .clip(MaterialTheme.shapes.medium)
                     .border(
                         width = 1.dp,

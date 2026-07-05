@@ -4,11 +4,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BakeryDining
 import androidx.compose.material.icons.outlined.Blender
 import androidx.compose.material.icons.outlined.Cake
+import androidx.compose.material.icons.outlined.ChildFriendly
+import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.Coffee
 import androidx.compose.material.icons.outlined.Cookie
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Icecream
+import androidx.compose.material.icons.outlined.Kitchen
 import androidx.compose.material.icons.outlined.LocalDining
 import androidx.compose.material.icons.outlined.LocalFireDepartment
+import androidx.compose.material.icons.outlined.Medication
+import androidx.compose.material.icons.outlined.Soap
 import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.ui.graphics.Color
@@ -62,12 +68,12 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
 
         // Aisle 3 (Bottom to Top walk order)
         2 to listOf(
-            AisleLocation("A03P1", "2311", walkOrder = 12, category = "Rice & Staples", icon = Icons.Outlined.LocalDining, color = Color(0xFF8D6E63)),
-            AisleLocation("A03P2", "2312", walkOrder = 13, category = "Oils & Ghee", icon = Icons.Outlined.LocalFireDepartment, color = Color(0xFFFFB300)),
-            AisleLocation("A03P3", "2313", walkOrder = 14, category = "Spices & Masalas", icon = Icons.Outlined.Blender, color = Color(0xFFE53935)),
-            AisleLocation("A03P4", "2314", walkOrder = 15, category = "Salt, Sugar & Sweeteners", icon = Icons.Outlined.WaterDrop, color = Color(0xFF00ACC1)),
-            AisleLocation("A03P5", "2315", walkOrder = 16, category = "Dairy & Frozen", icon = Icons.Outlined.Icecream, color = Color(0xFF1E88E5)),
-            AisleLocation("A03P6", "2316", walkOrder = 17, category = "Fruits & Vegetables", icon = Icons.Outlined.Spa, color = Color(0xFF43A047))
+            AisleLocation("A03P1", "2311", walkOrder = 12, category = "Baby Care", icon = Icons.Outlined.ChildFriendly, color = Color(0xFF8D6E63)),
+            AisleLocation("A03P2", "2312", walkOrder = 13, category = "Personal Care", icon = Icons.Outlined.Soap, color = Color(0xFFFFB300)),
+            AisleLocation("A03P3", "2313", walkOrder = 14, category = "Health & Hygiene", icon = Icons.Outlined.Medication, color = Color(0xFFE53935)),
+            AisleLocation("A03P4", "2314", walkOrder = 15, category = "Home Care", icon = Icons.Outlined.Home, color = Color(0xFF00ACC1)),
+            AisleLocation("A03P5", "2315", walkOrder = 16, category = "Plastic & Storage", icon = Icons.Outlined.Kitchen, color = Color(0xFF1E88E5)),
+            AisleLocation("A03P6", "2316", walkOrder = 17, category = "Cleaning Tools", icon = Icons.Outlined.CleaningServices, color = Color(0xFF43A047))
         )
     )
 
@@ -133,9 +139,10 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
     fun onResolveNow() {
         viewModelScope.launch {
             val currentId = _mapUiState.value.currentLocationId ?: return@launch
+            val issueLabel = surveyOptions.find { it.id == _mapUiState.value.selectedOption }?.label
             val updatedLocations = _mapUiState.value.locations.map { loc ->
                 if (loc.id == currentId)
-                    loc.copy(status = LocationStatus.COMPLETED, issueLabel = null, skipReason = null)
+                    loc.copy(status = LocationStatus.COMPLETED, issueLabel = issueLabel, skipReason = null)
                 else loc
             }
             _mapUiState.value = _mapUiState.value.copy(
@@ -150,9 +157,10 @@ class AisleMapViewModel @Inject constructor() : ViewModel() {
     fun onResolveLater() {
         viewModelScope.launch {
             val currentId = _mapUiState.value.currentLocationId ?: return@launch
+            val issueLabel = surveyOptions.find { it.id == _mapUiState.value.selectedOption }?.label
             val updatedLocations = _mapUiState.value.locations.map { loc ->
                 if (loc.id == currentId)
-                    loc.copy(status = LocationStatus.PENDING, issueLabel = null, skipReason = null)
+                    loc.copy(status = LocationStatus.PENDING, issueLabel = issueLabel, skipReason = null)
                 else loc
             }
             _mapUiState.value = _mapUiState.value.copy(

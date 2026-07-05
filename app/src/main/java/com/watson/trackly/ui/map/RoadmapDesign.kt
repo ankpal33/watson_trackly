@@ -1,5 +1,10 @@
 package com.watson.trackly.ui.map
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,8 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -38,6 +41,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -46,6 +50,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -102,14 +107,43 @@ fun RoadmapDesign(
 
                     if (p1 != null && p2 != null) {
                         val midY = (p1.y + p2.y) / 2f
+                        val dy = abs(p1.y - midY)
+                        val dx = abs(p1.x - p2.x)
+                        val r = 60.dp.toPx().coerceAtMost(dy.coerceAtMost(dx / 2f))
+
                         val path = Path().apply {
                             moveTo(p1.x, p1.y)
-                            lineTo(p1.x, midY)
-                            lineTo(p2.x, midY)
+                            
+                            // To first curve
+                            val c1y = if (midY > p1.y) midY - r else midY + r
+                            lineTo(p1.x, c1y)
+                            
+                            // First curve
+                            val c1x = if (p2.x > p1.x) p1.x + r else p1.x - r
+                            quadraticBezierTo(p1.x, midY, c1x, midY)
+                            
+                            // To second curve
+                            val c2x = if (p2.x > p1.x) p2.x - r else p2.x + r
+                            lineTo(c2x, midY)
+                            
+                            // Second curve
+                            val c2y = if (p2.y > midY) midY + r else midY - r
+                            quadraticBezierTo(p2.x, midY, p2.x, c2y)
+                            
+                            // To end
                             lineTo(p2.x, p2.y)
                         }
 
-                        drawPath(path = path, color = trackColor, style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                        drawPath(
+                            path = path, 
+                            color = trackColor, 
+                            style = Stroke(
+                                width = strokeWidth, 
+                                cap = StrokeCap.Round, 
+                                join = StrokeJoin.Round,
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                            )
+                        )
 
                         if (aisle1 != null && aisle2 != null && aisle1 != aisle2) {
                             val arrowX = (p1.x + p2.x) / 2f
@@ -124,14 +158,33 @@ fun RoadmapDesign(
                 val firstNode = positionsMap[sortedWalkOrders.first()]
                 if (firstNode != null) {
                     val startY = firstNode.y + 60.dp.toPx()
-                    drawLine(color = trackColor, start = Offset(firstNode.x, startY), end = firstNode, strokeWidth = strokeWidth, cap = StrokeCap.Round)
-                    drawArrow(point = Offset(firstNode.x, (startY + firstNode.y) / 2), angleRad = -1.57f, color = trackColor, strokeWidth = strokeWidth)
+                    val startPoint = Offset(firstNode.x, startY)
+                    drawLine(
+                        color = trackColor, 
+                        start = startPoint, 
+                        end = firstNode, 
+                        strokeWidth = strokeWidth, 
+                        cap = StrokeCap.Round,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                    )
+                    drawCircle(color = trackColor, radius = 4.dp.toPx(), center = startPoint)
                 }
                 
                 val lastNode = positionsMap[sortedWalkOrders.last()]
                 if (lastNode != null) {
                     val endY = lastNode.y - 60.dp.toPx()
-                    drawLine(color = trackColor, start = lastNode, end = Offset(lastNode.x, endY), strokeWidth = strokeWidth, cap = StrokeCap.Round)
+                    val endPoint = Offset(lastNode.x, endY)
+                    drawLine(
+                        color = trackColor, 
+                        start = lastNode, 
+                        end = endPoint, 
+                        strokeWidth = strokeWidth, 
+                        cap = StrokeCap.Round,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                    )
+
+                    // Small ending dot
+                    drawCircle(color = trackColor, radius = 4.dp.toPx(), center = endPoint)
                 }
             }
         }
@@ -183,7 +236,7 @@ private fun RoadmapColumnView(
         else column.locations.sortedBy { it.walkOrder }
     }
 
-    Box(modifier = Modifier.width(340.dp).height(900.dp)) {
+    Box(modifier = Modifier.width(340.dp).height(800.dp)) {
         Column(
             modifier = Modifier.padding(20.dp).align(Alignment.TopCenter),
             verticalArrangement = Arrangement.Top,
@@ -223,16 +276,52 @@ private fun StepCard(
             modifier = Modifier.fillMaxSize().padding(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (isIconOnRight) {
-                Column(modifier = Modifier.weight(1f).padding(start = 20.dp, end = 8.dp), verticalArrangement = Arrangement.Center) {
-                    Text(text = location.category.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2)
+            val textContent = @Composable {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = if (isIconOnRight) 20.dp else 8.dp),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = location.category.uppercase(),
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1
+                    )
+
+                    val statusText = when (location.status) {
+                        LocationStatus.COMPLETED -> "Resolved: ${location.issueLabel}"
+                        LocationStatus.PENDING -> "Pending: ${location.issueLabel}"
+                        LocationStatus.SKIPPED -> "Skipped: ${location.skipReason ?: ""}"
+                        else -> null
+                    }
+
+                    AnimatedVisibility(
+                        visible = statusText != null,
+                        enter = fadeIn() + slideInVertically(animationSpec = tween(400)) { it / 2 },
+                        exit = fadeOut()
+                    ) {
+                        if (statusText != null) {
+                            Text(
+                                text = statusText,
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
+                            )
+                        }
+                    }
                 }
+            }
+
+            if (isIconOnRight) {
+                textContent()
                 location.icon?.let { IconCircle(it, location.color) }
             } else {
                 location.icon?.let { IconCircle(it, location.color) }
-                Column(modifier = Modifier.weight(1f).padding(start = 8.dp, end = 20.dp), verticalArrangement = Arrangement.Center) {
-                    Text(text = location.category.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2)
-                }
+                textContent()
             }
         }
     }
@@ -253,7 +342,7 @@ private fun StepCircle(
 ) {
     val trackColor = Color(0xFF004B6E)
     val statusColor = when (location.status) {
-        LocationStatus.COMPLETED -> location.color
+        LocationStatus.COMPLETED -> Color(0xFF4CAF50)
         LocationStatus.CURRENT -> location.color
         LocationStatus.PENDING -> Color(0xFFFFAA46)
         LocationStatus.SKIPPED -> Color(0xFFDC301B)
@@ -273,11 +362,7 @@ private fun StepCircle(
             .background(Color.White, CircleShape).border(2.dp, trackColor, CircleShape).padding(4.dp),
         contentAlignment = Alignment.Center
     ) {
-        Box(modifier = Modifier.fillMaxSize().background(if (isFilled) statusColor else Color.Transparent, CircleShape)) {
-            if (location.status == LocationStatus.COMPLETED) {
-                Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(14.dp))
-            }
-        }
+        Box(modifier = Modifier.fillMaxSize().background(if (isFilled) statusColor else Color.Transparent, CircleShape))
     }
 }
 
